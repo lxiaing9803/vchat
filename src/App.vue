@@ -1,60 +1,39 @@
 <template>
   <div class="flex items-center justify-between h-screen">
     <div class="bg-gray-200 w-[300px] h-full border-r border-gray-300">
-      <ConversationList :items="items" />
+      <div class="h-[90%] overflow-y-auto scrollbar-hide">
+        <ConversationList :items="conversations" />
+      </div>
+      <div class="h-[10%] grid grid-cols-2 gap-2 p-2 items-center">
+        <Button @click="handleNavigate('/conversation')" iconName="radix-icons:chat-bubble">
+          新建对话
+        </Button>
+        <Button plain @click="handleNavigate('/setting')" iconName="radix-icons:gear">
+          应用设置
+        </Button>
+      </div>
     </div>
-    <div class="bg-green-300 text-blue-700 h-full flex-1">
-      content
-      <input
-        type="text"
-        placeholder="Search for anything"
-        class="placeholder:text-blue-300"
-      />
+    <div class="h-full flex-1 ">
+      <RouterView />
     </div>
   </div>
 </template>
 
 <script setup lang="ts">
-import { ConversationProps } from "./types"
-import ConversationList from "./components/ConversationList.vue"
+import ConversationList from "./components/ConversationList.vue";
+import { useRouter } from "vue-router";
+import { conversations } from "./testData";
+import Button from "./components/Button.vue";
 
-const items: ConversationProps[] = [
-  {
-    id: 1,
-    selectedModel: "GPT-3.5-Turbo",
-    title: "什么是光合作用1",
-    createdAt: "2025-01-01",
-    updatedAt: "2025-01-01",
-    providerId: "1",
-  },
-  {
-    id: 2,
-    selectedModel: "GPT-3.5-Turbo",
-    title: "什么是光合作用2",
-    createdAt: "2025-01-01",
-    updatedAt: "2025-01-01",
-    providerId: "1",
-  },
-  {
-    id: 3,
-    selectedModel: "GPT-3.5-Turbo",
-    title: "什么是光合作用3",
-    createdAt: "2025-01-01",
-    updatedAt: "2025-01-01",
-    providerId: "1",
-  },
-  {
-    id: 4,
-    selectedModel: "GPT-3.5-Turbo",
-    title: "什么是光合作用4,什么是光合作用4,什么是光合作用4",
-    createdAt: "2025-01-01",
-    updatedAt: "2025-01-01",
-    providerId: "1",
-  },
-]
+const router = useRouter()
+
+const handleNavigate = (path: string) => {
+  router.push(path)
+}
+
 console.log(
-  '👋 This message is being logged by "renderer.ts", included via Vite'
-)
+  '👋 This message is being logged by "renderer.ts", included via Vite',
+);
 </script>
 
 <style scoped></style>

@@ -1,1 +1,15 @@
 @import "tailwindcss";
+
+/* 在你的全局 CSS 文件中添加 */
+@layer utilities {
+
+    /* 隐藏滚动条但保留滚动功能 */
+    .scrollbar-hide {
+        -ms-overflow-style: none;
+        scrollbar-width: none;
+    }
+
+    .scrollbar-hide::-webkit-scrollbar {
+        display: none;
+    }
+}
