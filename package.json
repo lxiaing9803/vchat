@@ -28,6 +28,7 @@
     "@electron-forge/plugin-vite": "^7.8.1",
     "@electron/fuses": "^1.8.0",
     "@iconify/vue": "^5.0.0",
+    "@types/electron-squirrel-startup": "^1.0.2",
     "@typescript-eslint/eslint-plugin": "^5.62.0",
     "@typescript-eslint/parser": "^5.62.0",
     "@vitejs/plugin-vue": "^6.0.0",
@@ -40,8 +41,13 @@
     "vite": "^5.4.19"
   },
   "dependencies": {
+    "@baiducloud/qianfan": "^0.2.3",
     "@tailwindcss/vite": "^4.1.11",
+    "dayjs": "^1.11.13",
+    "dexie": "^4.0.11",
+    "dotenv": "^17.2.1",
     "electron-squirrel-startup": "^1.0.1",
+    "openai": "^5.10.2",
     "radix-vue": "^1.9.17",
     "vue": "^3.5.17",
     "vue-router": "^4.5.1"

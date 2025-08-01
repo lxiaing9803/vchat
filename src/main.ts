@@ -1,13 +1,16 @@
-import { app, BrowserWindow } from "electron"
+import { app, BrowserWindow, ipcMain } from "electron"
 import path from "node:path"
 import started from "electron-squirrel-startup"
+import "dotenv/config"
+import { ChatCompletion } from "@baiducloud/qianfan"
+import { CreateChatProps, UpdateStreamData } from "./types"
 
 // Handle creating/removing shortcuts on Windows when installing/uninstalling.
 if (started) {
   app.quit()
 }
 
-const createWindow = () => {
+const createWindow = async () => {
   // Create the browser window.
   const mainWindow = new BrowserWindow({
     width: 1200,
@@ -15,6 +18,31 @@ const createWindow = () => {
     webPreferences: {
       preload: path.join(__dirname, "preload.js"),
     },
+  })
+
+  ipcMain.on("start-chat", async (event, data: CreateChatProps) => {
+    const { content, provideName, selectedModel, messageId } = data
+    if (provideName === "qianfan") {
+      const client = new ChatCompletion()
+      const stream = await client.chat(
+        {
+          messages: [{ role: "user", content }],
+          stream: true,
+        },
+        selectedModel
+      )
+      for await (const chunk of stream as any) {
+        const { is_end, result } = chunk
+        const chunkContent: UpdateStreamData = {
+          messageId,
+          data: {
+            is_end,
+            result,
+          },
+        }
+        mainWindow.webContents.send("update-message", chunkContent)
+      }
+    }
   })
 
   // and load the index.html of the app.

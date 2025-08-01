@@ -29,3 +29,20 @@ export interface MessageProps {
   updatedAt: string
   status?: MessageStatus
 }
+
+export interface CreateChatProps {
+  content: string
+  provideName: string
+  selectedModel: string
+  messageId: number
+}
+
+export interface UpdateStreamData {
+  messageId: number
+  data: {
+    is_end: boolean
+    result: string
+  }
+}
+
+export type OnUpdateMessageCallback = (data: UpdateStreamData) => void

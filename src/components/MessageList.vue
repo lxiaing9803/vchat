@@ -4,7 +4,7 @@
             <div class="flex" :class="{ 'justify-end': message.type === 'question' }">
                 <div>
                     <div class="text-sm text-gray-500 mb-2" :class="{ 'text-right': message.type === 'question' }">
-                        {{ message.createdAt }}</div>
+                        {{ dayjs(message.createdAt).format('YYYY-MM-DD HH:mm:ss') }}</div>
                     <div class=" message-question bg-green-700 text-white rounded-md p-2"
                         v-if="message.type === 'question'">
                         {{ message.content }}
@@ -27,6 +27,7 @@
 <script setup lang="ts">
 import { MessageProps } from '@/types'
 import { Icon } from '@iconify/vue';
+import dayjs from 'dayjs'
 
 defineProps<{
     messages: MessageProps[]

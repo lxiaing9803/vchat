@@ -5,7 +5,7 @@
         <ConversationList :items="conversations" />
       </div>
       <div class="h-[10%] grid grid-cols-2 gap-2 p-2 items-center">
-        <Button @click="handleNavigate('/conversation')" iconName="radix-icons:chat-bubble">
+        <Button @click="handleNavigate('/')" iconName="radix-icons:chat-bubble">
           新建对话
         </Button>
         <Button plain @click="handleNavigate('/setting')" iconName="radix-icons:gear">
@@ -22,14 +22,23 @@
 <script setup lang="ts">
 import ConversationList from "./components/ConversationList.vue";
 import { useRouter } from "vue-router";
-import { conversations } from "./testData";
+import { db, initProviders } from './db'
 import Button from "./components/Button.vue";
+import { onMounted, ref } from "vue";
+import { ConversationProps } from "./types";
 
 const router = useRouter()
+
+const conversations = ref<ConversationProps[]>([])
 
 const handleNavigate = (path: string) => {
   router.push(path)
 }
+
+onMounted(async () => {
+  await initProviders()
+  conversations.value = await db.conversations.toArray()
+})
 
 console.log(
   '👋 This message is being logged by "renderer.ts", included via Vite',
