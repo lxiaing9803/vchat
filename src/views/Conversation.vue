@@ -7,7 +7,7 @@
         <MessageList :messages="filteredMessages" />
     </div>
     <div class="w-[80%] mx-auto h-[15%] flex items-center ">
-        <MessageInput />
+        <MessageInput v-model="inputValue" @create="sendNewMessage" :disabled="messageStore.isMessageLoading" />
     </div>
 </template>
 
@@ -15,74 +15,82 @@
 import MessageInput from '@/components/MessageInput.vue'
 import MessageList from '@/components/MessageList.vue'
 import { useRoute } from 'vue-router'
-import { onMounted, ref, watch } from 'vue'
-import { ConversationProps, MessageProps, MessageStatus } from '@/types'
+import { computed, onMounted, ref, watch } from 'vue'
+import { MessageProps, MessageRoleType } from '@/types'
 import { db } from '@/db'
+import { useConversationStore } from '@/stores/conversation'
+import { useMessageStore } from '@/stores/message'
 import dayjs from 'dayjs'
+import { useProviderStore } from '@/stores/provider'
 
 const route = useRoute()
-const filteredMessages = ref<MessageProps[]>([])
-const conversation = ref<ConversationProps>()
-const conversationId = parseInt(route.params.id as string)
+const conversationStore = useConversationStore()
+const messageStore = useMessageStore()
+
+const inputValue = ref('')
+
+const conversationId = ref(parseInt(route.params.id as string))
 const initMessageId = parseInt(route.query.init as string)
-const lastQuestion = ref<string>('')
+const providerStore = useProviderStore()
+const conversation = computed(() => conversationStore.getConversationById(conversationId.value))
+const filteredMessages = computed(() => messageStore.items)
+const sendedMessages = computed(() => filteredMessages.value.filter(item => item.status !== 'loading').map(message => {
+    return {
+        role: (message.type === 'question' ? 'user' : 'assistant') as MessageRoleType,
+        content: message.content
+    }
+}))
 
 const dealPage = async (id: number) => {
-    filteredMessages.value = await db.messages.where({ conversationId: id }).toArray()
-    conversation.value = await db.conversations.where({ id }).first()
+    conversationId.value = id
+    await messageStore.fetchMessagesByConversation(conversationId.value)
 }
+
+const sendNewMessage = async (question: string) => {
+    if (question) {
+        const date = new Date().toISOString()
+        await messageStore.createMessage({
+            content: question,
+            conversationId: conversationId.value,
+            type: 'question',
+            createdAt: date,
+            updatedAt: date,
+        })
+        inputValue.value = ''
+        await createInitialMessage()
+    }
+}
+
 const createInitialMessage = async () => {
     const createdData: Omit<MessageProps, 'id'> = {
         content: '',
-        conversationId,
+        conversationId: conversationId.value,
         type: 'answer',
         createdAt: dayjs().toISOString(),
         updatedAt: dayjs().toISOString(),
         status: 'loading'
     }
-    const newMessageId = await db.messages.add(createdData)
-    filteredMessages.value.push({
-        ...createdData,
-        id: newMessageId,
-    })
+    const newMessageId = await messageStore.createMessage(createdData)
     if (conversation.value) {
-        const provider = await db.providers.where({ id: conversation.value.providerId }).first()
+        const provider = await providerStore.getProviderById(conversation.value.providerId)
         if (provider) {
             await window.electronAPI.startChat({
-                content: lastQuestion.value,
                 provideName: provider.name,
                 selectedModel: conversation.value.selectedModel,
-                messageId: newMessageId
+                messageId: newMessageId,
+                messages: sendedMessages.value
             })
         }
     }
 }
 
 onMounted(async () => {
-    await dealPage(conversationId)
+    await dealPage(conversationId.value)
     if (initMessageId) {
-        const lastMessage = await db.messages.where({ conversationId }).last()
-        lastQuestion.value = lastMessage?.content || ''
         await createInitialMessage()
     }
     window.electronAPI.onUpdateMessage(async (streamData) => {
-        const { messageId, data } = streamData
-        const currentMessage = await db.messages.where({ id: messageId }).first()
-        if (currentMessage) {
-            const updatedData = {
-                content: currentMessage.content + data.result,
-                status: data.is_end ? 'finished' : 'streaming' as MessageStatus,
-                updatedAt: new Date().toISOString()
-            }
-            await db.messages.update(messageId, updatedData)
-            const index = filteredMessages.value.findIndex(item => item.id === messageId)
-            if (index !== -1) {
-                filteredMessages.value[index] = {
-                    ...filteredMessages.value[index],
-                    ...updatedData
-                }
-            }
-        }
+        await messageStore.updateMessage(streamData)
     })
 })
 

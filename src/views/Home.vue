@@ -5,7 +5,7 @@
                 <ProviderSelect :items="providers" v-model="currentProvider" />
             </div>
             <div class=" flex items-center h-[15%]">
-                <MessageInput @create="createConversation" />
+                <MessageInput @create="createConversation" :disabled="!currentProvider" />
             </div>
         </div>
     </div>
@@ -15,17 +15,22 @@
 import ProviderSelect from "@/components/ProviderSelect.vue";
 import MessageInput from "@/components/MessageInput.vue";
 import { computed, onMounted, ref } from "vue";
-import { ProviderProps } from "@/types";
 import { db } from "@/db";
 import { useRouter } from "vue-router";
+import { useConversationStore } from "@/stores/conversation";
+import { useProviderStore } from "@/stores/provider";
 
 const navigate = useRouter()
 
 const currentProvider = ref<any>('')
-const providers = ref<ProviderProps[]>([])
+const providerStore = useProviderStore()
+
+const conversationStore = useConversationStore()
+
+const providers = computed(() => providerStore.items)
 
 onMounted(async () => {
-    providers.value = await db.providers.toArray()
+    await providerStore.fetchProviders()
 })
 
 const modelInfo = computed(() => {
@@ -39,7 +44,7 @@ const modelInfo = computed(() => {
 const createConversation = async (question: string) => {
     const { providerId, selectedModel } = modelInfo.value
     const currentDate = new Date().toISOString()
-    const conversationId = await db.conversations.add({
+    const conversationId = await conversationStore.createConversation({
         title: question,
         providerId,
         selectedModel,
@@ -56,9 +61,6 @@ const createConversation = async (question: string) => {
     navigate.push(`/conversation/${conversationId}?init=${newMessageId}`)
 }
 
-console.log(
-    '👋 This message is being logged by "renderer.ts", included via Vite',
-);
 </script>
 
 <style scoped></style>

@@ -2,7 +2,7 @@
   <div class="flex items-center justify-between h-screen">
     <div class="bg-gray-200 w-[300px] h-full border-r border-gray-300">
       <div class="h-[90%] overflow-y-auto scrollbar-hide">
-        <ConversationList :items="conversations" />
+        <ConversationList :items="items" />
       </div>
       <div class="h-[10%] grid grid-cols-2 gap-2 p-2 items-center">
         <Button @click="handleNavigate('/')" iconName="radix-icons:chat-bubble">
@@ -22,14 +22,16 @@
 <script setup lang="ts">
 import ConversationList from "./components/ConversationList.vue";
 import { useRouter } from "vue-router";
-import { db, initProviders } from './db'
+import { useConversationStore } from "./stores/conversation";
+import { initProviders } from './db'
 import Button from "./components/Button.vue";
-import { onMounted, ref } from "vue";
-import { ConversationProps } from "./types";
+import { computed, onMounted, ref } from "vue";
 
 const router = useRouter()
 
-const conversations = ref<ConversationProps[]>([])
+const conversationStore = useConversationStore()
+
+const items = computed(() => conversationStore.items)
 
 const handleNavigate = (path: string) => {
   router.push(path)
@@ -37,7 +39,7 @@ const handleNavigate = (path: string) => {
 
 onMounted(async () => {
   await initProviders()
-  conversations.value = await db.conversations.toArray()
+  conversationStore.fetchConversations()
 })
 
 console.log(
