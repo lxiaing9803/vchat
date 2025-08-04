@@ -42,9 +42,6 @@ onMounted(async () => {
   conversationStore.fetchConversations()
 })
 
-console.log(
-  '👋 This message is being logged by "renderer.ts", included via Vite',
-);
 </script>
 
 <style scoped></style>

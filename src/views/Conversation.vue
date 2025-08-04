@@ -4,7 +4,7 @@
         <span class="text-gray-500 text-sm">{{ dayjs(conversation?.createdAt).format('YYYY-MM-DD HH:mm:ss') }}</span>
     </div>
     <div class="w-[80%] mx-auto h-[75%] overflow-y-auto scrollbar-hide pt-2">
-        <MessageList :messages="filteredMessages" />
+        <MessageList :messages="filteredMessages" ref="messageListRef" />
     </div>
     <div class="w-[80%] mx-auto h-[15%] flex items-center ">
         <MessageInput v-model="inputValue" @create="sendNewMessage" :disabled="messageStore.isMessageLoading" />
@@ -15,9 +15,8 @@
 import MessageInput from '@/components/MessageInput.vue'
 import MessageList from '@/components/MessageList.vue'
 import { useRoute } from 'vue-router'
-import { computed, onMounted, ref, watch } from 'vue'
-import { MessageProps, MessageRoleType } from '@/types'
-import { db } from '@/db'
+import { computed, nextTick, onMounted, ref, watch } from 'vue'
+import { MessageListInstance, MessageProps, MessageRoleType } from '@/types'
 import { useConversationStore } from '@/stores/conversation'
 import { useMessageStore } from '@/stores/message'
 import dayjs from 'dayjs'
@@ -28,6 +27,8 @@ const conversationStore = useConversationStore()
 const messageStore = useMessageStore()
 
 const inputValue = ref('')
+
+const messageListRef = ref<MessageListInstance>()
 
 const conversationId = ref(parseInt(route.params.id as string))
 const initMessageId = parseInt(route.query.init as string)
@@ -61,6 +62,15 @@ const sendNewMessage = async (question: string) => {
     }
 }
 
+const messageListScrollToBottom = async () => {
+    if (messageListRef.value) {
+        messageListRef.value.ref.scrollIntoView({
+            behavior: 'smooth',
+            block: 'end'
+        })
+    }
+}
+
 const createInitialMessage = async () => {
     const createdData: Omit<MessageProps, 'id'> = {
         content: '',
@@ -71,6 +81,7 @@ const createInitialMessage = async () => {
         status: 'loading'
     }
     const newMessageId = await messageStore.createMessage(createdData)
+    await messageListScrollToBottom()
     if (conversation.value) {
         const provider = await providerStore.getProviderById(conversation.value.providerId)
         if (provider) {
@@ -86,16 +97,31 @@ const createInitialMessage = async () => {
 
 onMounted(async () => {
     await dealPage(conversationId.value)
+    await nextTick()
+    await messageListScrollToBottom()
     if (initMessageId) {
         await createInitialMessage()
     }
+    let currentMessageListHeight = 0
+    const checkAndScrollToBottom = async () => {
+        if (messageListRef.value) {
+            const newHeight = messageListRef.value.ref.clientHeight
+            if (newHeight > currentMessageListHeight) {
+                currentMessageListHeight = newHeight
+                await messageListScrollToBottom()
+            }
+        }
+    }
     window.electronAPI.onUpdateMessage(async (streamData) => {
         await messageStore.updateMessage(streamData)
+        await nextTick()
+        await checkAndScrollToBottom()
     })
 })
 
 watch(() => route.params.id, async (newId: string) => {
     await dealPage(+newId)
+    await messageListScrollToBottom()
 })
 
 </script>

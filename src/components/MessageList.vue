@@ -1,5 +1,5 @@
 <template>
-    <div class="message-list">
+    <div class="message-list" ref="_ref">
         <div class="message-item mb-3" v-for="message in messages" :key="message.id">
             <div class="flex" :class="{ 'justify-end': message.type === 'question' }">
                 <div>
@@ -13,10 +13,10 @@
                         <template v-if="message.status === 'loading'">
                             <Icon icon="eos-icons:three-dots-loading" />
                         </template>
-                        <template v-else>
-                            {{ message.content }}
-
-                        </template>
+                        <div class="prose prose-slate prose-headings:my-2 prose-li:my-0 prose-ul:my-1 prose-pre:p-0"
+                            v-else>
+                            <VueMarkdown :source="message.content" :plugins="plugins" />
+                        </div>
                     </div>
                 </div>
             </div>
@@ -26,8 +26,19 @@
 
 <script setup lang="ts">
 import { MessageProps } from '@/types'
+import VueMarkdown from 'vue-markdown-render';
+import MarkdownItHightlightjs from 'markdown-it-highlightjs'
 import { Icon } from '@iconify/vue';
+import { ref } from 'vue'
 import dayjs from 'dayjs'
+
+const _ref = ref<HTMLElement>()
+
+const plugins = [MarkdownItHightlightjs]
+
+defineExpose({
+    ref: _ref
+})
 
 defineProps<{
     messages: MessageProps[]

@@ -30,6 +30,7 @@ import { createPinia } from "pinia"
 import App from "./App.vue"
 import "./index.css"
 import router from "./routes"
+import "highlight.js/styles/github-dark.min.css"
 
 const pinia = createPinia()
 
