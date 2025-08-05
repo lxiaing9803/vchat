@@ -1,10 +1,14 @@
-import { app, BrowserWindow, ipcMain } from "electron"
+import { app, BrowserWindow, ipcMain, net, protocol } from "electron"
 import path from "node:path"
 import started from "electron-squirrel-startup"
 import "dotenv/config"
 import { ChatCompletion } from "@baiducloud/qianfan"
 import { CreateChatProps, UpdateStreamData } from "./types"
 import OpenAI from "openai"
+import fs from "fs/promises"
+import url from "url"
+import { convertMessages } from "./helper"
+// import { lookup } from "mime-types"
 
 // Handle creating/removing shortcuts on Windows when installing/uninstalling.
 if (started) {
@@ -20,14 +24,40 @@ const createWindow = async () => {
       preload: path.join(__dirname, "preload.js"),
     },
   })
-
+  protocol.handle("safe-file", async (request) => {
+    const filePath = decodeURIComponent(
+      request.url.slice("safe-file://".length)
+    )
+    // const data = await fs.readFile(filePath)
+    // return new Response(data, {
+    //   status: 200,
+    //   headers: {
+    //     "Content-Type": lookup(filePath) as string,
+    //   },
+    // })
+    const newFilePath = url.pathToFileURL(filePath).toString()
+    return net.fetch(newFilePath)
+  })
+  ipcMain.handle(
+    "copy-image-to-user-dir",
+    async (event, sourcePath: string) => {
+      const userDataPath = app.getPath("userData")
+      const imagesDir = path.join(userDataPath, "images")
+      await fs.mkdir(imagesDir, { recursive: true })
+      const fileName = path.basename(sourcePath)
+      const destPath = path.join(imagesDir, fileName)
+      await fs.copyFile(sourcePath, destPath)
+      return destPath
+    }
+  )
   ipcMain.on("start-chat", async (event, data: CreateChatProps) => {
     const { messages, provideName, selectedModel, messageId } = data
+    const convertedMessages = await convertMessages(messages)
     if (provideName === "qianfan") {
       const client = new ChatCompletion()
       const stream = await client.chat(
         {
-          messages,
+          messages: convertedMessages as any,
           stream: true,
         },
         selectedModel
@@ -46,10 +76,11 @@ const createWindow = async () => {
     } else if (provideName === "dashscope") {
       const client = new OpenAI({
         apiKey: process.env.ALI_API_KEY,
+        baseURL: "https://dashscope.aliyuncs.com/compatible-mode/v1",
       })
       const stream = await client.chat.completions.create({
         model: selectedModel,
-        messages,
+        messages: convertedMessages,
         stream: true,
       })
       for await (const chunk of stream) {

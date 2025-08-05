@@ -28,15 +28,19 @@ export interface MessageProps {
   createdAt: string
   updatedAt: string
   status?: MessageStatus
+  imagePath?: string
 }
 
 export type MessageRoleType = "user" | "assistant"
 
+export interface ChatMessageProps {
+  role: MessageRoleType
+  content: string
+  imagePath?: string
+}
+
 export interface CreateChatProps {
-  messages: {
-    role: MessageRoleType
-    content: string
-  }[]
+  messages: ChatMessageProps[]
   provideName: string
   selectedModel: string
   messageId: number
