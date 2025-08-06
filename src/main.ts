@@ -2,12 +2,10 @@ import { app, BrowserWindow, ipcMain, net, protocol } from "electron"
 import path from "node:path"
 import started from "electron-squirrel-startup"
 import "dotenv/config"
-import { ChatCompletion } from "@baiducloud/qianfan"
-import { CreateChatProps, UpdateStreamData } from "./types"
-import OpenAI from "openai"
+import { CreateChatProps } from "./types"
 import fs from "fs/promises"
 import url from "url"
-import { convertMessages } from "./helper"
+import { createProvider } from "./providers/createProvider"
 // import { lookup } from "mime-types"
 
 // Handle creating/removing shortcuts on Windows when installing/uninstalling.
@@ -52,48 +50,17 @@ const createWindow = async () => {
   )
   ipcMain.on("start-chat", async (event, data: CreateChatProps) => {
     const { messages, provideName, selectedModel, messageId } = data
-    const convertedMessages = await convertMessages(messages)
-    if (provideName === "qianfan") {
-      const client = new ChatCompletion()
-      const stream = await client.chat(
-        {
-          messages: convertedMessages as any,
-          stream: true,
+    const provider = createProvider(provideName)
+    const stream = await provider.chat(messages, selectedModel)
+    for await (const chunk of stream) {
+      const content = {
+        messageId,
+        data: {
+          is_end: chunk.is_end,
+          result: chunk.result,
         },
-        selectedModel
-      )
-      for await (const chunk of stream as any) {
-        const { is_end, result } = chunk
-        const chunkContent: UpdateStreamData = {
-          messageId,
-          data: {
-            is_end,
-            result,
-          },
-        }
-        mainWindow.webContents.send("update-message", chunkContent)
       }
-    } else if (provideName === "dashscope") {
-      const client = new OpenAI({
-        apiKey: process.env.ALI_API_KEY,
-        baseURL: "https://dashscope.aliyuncs.com/compatible-mode/v1",
-      })
-      const stream = await client.chat.completions.create({
-        model: selectedModel,
-        messages: convertedMessages,
-        stream: true,
-      })
-      for await (const chunk of stream) {
-        const choice = chunk.choices[0]
-        const content = {
-          messageId,
-          data: {
-            is_end: choice.finish_reason === "stop",
-            result: choice.delta.content || "",
-          },
-        }
-        mainWindow.webContents.send("update-message", content)
-      }
+      mainWindow.webContents.send("update-message", content)
     }
   })
 
