@@ -41,7 +41,7 @@ export interface ChatMessageProps {
 
 export interface CreateChatProps {
   messages: ChatMessageProps[]
-  provideName: string
+  providerName: string
   selectedModel: string
   messageId: number
 }
@@ -68,4 +68,16 @@ export interface UniversalChunkProps {
 export interface BaiduChunkProps {
   is_end: boolean
   result: string
+}
+
+export interface AppConfig {
+  language: "zh" | "en"
+  fontSize: number
+  providerConfigs: Record<string, Record<string, string>>
+}
+
+export const DEFAULT_CONFIG: AppConfig = {
+  language: "zh",
+  fontSize: 14,
+  providerConfigs: {},
 }

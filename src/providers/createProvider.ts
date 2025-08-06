@@ -1,31 +1,34 @@
 import { BaseProvider } from "./BaseProvider"
-import { OpenAIProvider } from "./OpenAIProvider"
 import { QianfanProvider } from "./QianfanProvider"
+import { OpenAIProvider } from "./OpenAIProvider"
+import { configManager } from "../config"
 
-export const createProvider = (providerName: string): BaseProvider => {
-  const accessKey = process.env["QIANFAN_ACCESS_KEY"]
-  const secretKey = process.env["QIANFAN_SECRET_KEY"]
-  const apiKey = process.env["ALI_API_KEY"]
-  const dsApiKey = process.env["DS_API_KEY"]
+export function createProvider(providerName: string): BaseProvider {
+  const config = configManager.get()
+  const providerConfig = config.providerConfigs[providerName] || {}
   switch (providerName) {
     case "qianfan":
-      if (!accessKey || !secretKey) {
-        throw new Error("QIANFAN_ACCESS_KEY or QIANFAN_SECRET_KEY is not set")
+      if (!providerConfig.accessKey || !providerConfig.secretKey) {
+        throw new Error(
+          "缺少千帆API配置：请在设置中配置 accessKey 和 secretKey"
+        )
       }
-      return new QianfanProvider(accessKey, secretKey)
-    case "dashscope":
-      if (!apiKey) {
-        throw new Error("ALI_API_KEY is not set")
-      }
-      return new OpenAIProvider(
-        apiKey,
-        "https://dashscope.aliyuncs.com/compatible-mode/v1"
+      return new QianfanProvider(
+        providerConfig.accessKey,
+        providerConfig.secretKey
       )
-    case "deepseek":
-      if (!dsApiKey) {
-        throw new Error("DS_API_KEY is not set")
+    case "dashscope":
+      if (!providerConfig.apiKey || !providerConfig.baseUrl) {
+        throw new Error("缺少通义千问API配置：请在设置中配置 apiKey 和 baseUrl")
       }
-      return new OpenAIProvider(dsApiKey, "https://api.deepseek.com/v1")
+      return new OpenAIProvider(providerConfig.apiKey, providerConfig.baseUrl)
+    case "deepseek":
+      if (!providerConfig.apiKey || !providerConfig.baseUrl) {
+        throw new Error(
+          "缺少DeepSeek API配置：请在设置中配置 apiKey 和 baseUrl"
+        )
+      }
+      return new OpenAIProvider(providerConfig.apiKey, providerConfig.baseUrl)
     default:
       throw new Error(`Unsupported provider: ${providerName}`)
   }

@@ -31,7 +31,8 @@ import App from "./App.vue"
 import "./index.css"
 import router from "./routes"
 import "highlight.js/styles/github-dark.min.css"
+import { i18n } from "./i18n"
 
 const pinia = createPinia()
 
-createApp(App).use(router).use(pinia).mount("#app")
+createApp(App).use(router).use(pinia).use(i18n).mount("#app")

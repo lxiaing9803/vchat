@@ -1,11 +1,10 @@
-import { app, BrowserWindow, ipcMain, net, protocol } from "electron"
+import { app, BrowserWindow, net, protocol } from "electron"
 import path from "node:path"
 import started from "electron-squirrel-startup"
 import "dotenv/config"
-import { CreateChatProps } from "./types"
-import fs from "fs/promises"
 import url from "url"
-import { createProvider } from "./providers/createProvider"
+import { createMenu } from "./menu"
+import { setupIPC } from "./ipc"
 // import { lookup } from "mime-types"
 
 // Handle creating/removing shortcuts on Windows when installing/uninstalling.
@@ -22,6 +21,13 @@ const createWindow = async () => {
       preload: path.join(__dirname, "preload.js"),
     },
   })
+
+  // Create application menu
+  createMenu(mainWindow)
+
+  // Setup IPC handlers
+  setupIPC(mainWindow)
+
   protocol.handle("safe-file", async (request) => {
     const filePath = decodeURIComponent(
       request.url.slice("safe-file://".length)
@@ -35,33 +41,6 @@ const createWindow = async () => {
     // })
     const newFilePath = url.pathToFileURL(filePath).toString()
     return net.fetch(newFilePath)
-  })
-  ipcMain.handle(
-    "copy-image-to-user-dir",
-    async (event, sourcePath: string) => {
-      const userDataPath = app.getPath("userData")
-      const imagesDir = path.join(userDataPath, "images")
-      await fs.mkdir(imagesDir, { recursive: true })
-      const fileName = path.basename(sourcePath)
-      const destPath = path.join(imagesDir, fileName)
-      await fs.copyFile(sourcePath, destPath)
-      return destPath
-    }
-  )
-  ipcMain.on("start-chat", async (event, data: CreateChatProps) => {
-    const { messages, provideName, selectedModel, messageId } = data
-    const provider = createProvider(provideName)
-    const stream = await provider.chat(messages, selectedModel)
-    for await (const chunk of stream) {
-      const content = {
-        messageId,
-        data: {
-          is_end: chunk.is_end,
-          result: chunk.result,
-        },
-      }
-      mainWindow.webContents.send("update-message", content)
-    }
   })
 
   // and load the index.html of the app.

@@ -121,7 +121,7 @@ const createInitialMessage = async () => {
     )
     if (provider) {
       await window.electronAPI.startChat({
-        provideName: provider.name,
+        providerName: provider.name,
         selectedModel: conversation.value.selectedModel,
         messageId: newMessageId,
         messages: sendedMessages.value,

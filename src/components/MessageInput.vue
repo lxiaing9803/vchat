@@ -41,7 +41,7 @@
         @click="onCreate"
         iconName="radix-icons:paper-plane"
       >
-        发送
+        {{ t("common.send") }}
       </Button>
     </div>
   </div>
@@ -51,12 +51,16 @@
 import { ref } from "vue"
 import { Icon } from "@iconify/vue"
 import Button from "./Button.vue"
+import { useI18n } from "vue-i18n"
 const props = defineProps<{
   disabled?: boolean
 }>()
 const emit = defineEmits<{
   create: [value: string, imagePath?: string]
 }>()
+
+const { t } = useI18n()
+
 const model = defineModel<string>()
 const imagePreview = ref<string>("")
 const fileInput = ref<HTMLInputElement | null>(null)

@@ -5,6 +5,10 @@ export interface IElectronAPI {
   onUpdateMessage: (callback: OnUpdateMessageCallback) => void
   copyImageToUserDir: (sourcePath: string) => Promise<string>
   getFilePath: (file: File) => string
+  getConfig: () => Promise<AppConfig>
+  updateConfig: (config: Partial<AppConfig>) => Promise<AppConfig>
+  onMenuNewConversation: (callback: () => void) => void
+  onMenuOpenSettings: (callback: () => void) => void
 }
 
 declare global {
